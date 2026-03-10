@@ -159,23 +159,6 @@ receive from server → base64 decode → AES-256-CBC → plaintext
 - ✅ Random IV for each message
 - ✅ XSS protection via HTML escaping
 
-### Limitations (Educational Project)
-- ⚠️ Shared key must be distributed securely out-of-band
-- ⚠️ No perfect forward secrecy
-- ⚠️ No user authentication
-- ⚠️ Keys stored in browser memory (not persistent)
-- ⚠️ No message persistence (messages lost on refresh)
-
-### Production Recommendations
-For a production system, consider:
-- Implement Diffie-Hellman or RSA key exchange
-- Add user authentication (OAuth, JWT)
-- Use TLS/SSL (HTTPS) for transport security
-- Implement perfect forward secrecy
-- Add message persistence (database)
-- Implement key rotation
-- Add rate limiting and abuse prevention
-
 ## Technical Details
 
 ### Socket.IO Events
@@ -249,26 +232,13 @@ pip install pycryptodome
 - Ensure port 5000 is open
 - Try accessing via `127.0.0.1:5000` instead of `localhost:5000`
 
-## Future Enhancements
-
-- [ ] Public/private key encryption (RSA)
-- [ ] Diffie-Hellman key exchange
-- [ ] File sharing support
-- [ ] Message history persistence
-- [ ] User authentication
-- [ ] Private messaging (DMs)
-- [ ] Message read receipts
-- [ ] Emoji support
-- [ ] Dark mode
-- [ ] Mobile app version
-
 ## License
 
 This is an educational project for learning socket programming and encryption concepts.
 
 ## Contributors
 
-Built for Network Programming Final Project
+Built for CIT221 - Network Programming Final Project at Pace University
 
 ---
 
