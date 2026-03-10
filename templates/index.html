@@ -48,6 +48,26 @@
                         <span id="user-name" class="user-badge"></span>
                     </div>
                     <div class="header-right">
+                        <div class="status-dropdown">
+                            <button id="status-btn" class="status-badge status-clickable">
+                                <span class="status-indicator active"></span>
+                                <span class="status-text">Active</span>
+                            </button>
+                            <div id="status-menu" class="status-menu">
+                                <div class="status-option" data-status="active">
+                                    <span class="status-indicator active"></span>
+                                    <span>Active</span>
+                                </div>
+                                <div class="status-option" data-status="busy">
+                                    <span class="status-indicator busy"></span>
+                                    <span>Busy</span>
+                                </div>
+                                <div class="status-option" data-status="away">
+                                    <span class="status-indicator away"></span>
+                                    <span>Away</span>
+                                </div>
+                            </div>
+                        </div>
                         <span id="encryption-status" class="status-badge">🔒 Encrypted</span>
                         <button id="leave-btn" class="btn btn-danger">Leave</button>
                     </div>

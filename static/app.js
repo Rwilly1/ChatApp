@@ -18,6 +18,9 @@ const userNameDisplay = document.getElementById('user-name');
 const leaveBtn = document.getElementById('leave-btn');
 const generateKeyBtn = document.getElementById('generate-key-btn');
 const typingIndicator = document.getElementById('typing-indicator');
+const statusBtn = document.getElementById('status-btn');
+const statusMenu = document.getElementById('status-menu');
+let currentStatus = 'active';
 
 // Initialize Socket.IO connection
 function initializeSocket() {
@@ -230,8 +233,18 @@ function updateUserList(users) {
     userList.innerHTML = '';
     users.forEach(user => {
         const li = document.createElement('li');
-        li.textContent = user;
-        if (user === currentUser) {
+        
+        // Create status indicator
+        const statusIndicator = document.createElement('span');
+        statusIndicator.className = `status-indicator ${user.status || 'active'}`;
+        
+        // Create username text
+        const usernameText = document.createTextNode(` ${user.username}`);
+        
+        li.appendChild(statusIndicator);
+        li.appendChild(usernameText);
+        
+        if (user.username === currentUser) {
             li.style.fontWeight = 'bold';
         }
         userList.appendChild(li);
@@ -263,6 +276,43 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Status dropdown functionality
+statusBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    statusMenu.classList.toggle('show');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+    statusMenu.classList.remove('show');
+});
+
+// Handle status selection
+document.querySelectorAll('.status-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+        const newStatus = e.currentTarget.dataset.status;
+        updateStatus(newStatus);
+        statusMenu.classList.remove('show');
+    });
+});
+
+// Update user status
+function updateStatus(status) {
+    currentStatus = status;
+    
+    // Update button display
+    const statusIndicator = statusBtn.querySelector('.status-indicator');
+    const statusText = statusBtn.querySelector('.status-text');
+    
+    statusIndicator.className = `status-indicator ${status}`;
+    statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    
+    // Emit status change to server
+    if (socket && socket.connected) {
+        socket.emit('status_change', { status: status });
+    }
 }
 
 // Initialize on page load

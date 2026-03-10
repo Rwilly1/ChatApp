@@ -51,7 +51,8 @@ def handle_join(data):
     active_users[request.sid] = {
         'username': username,
         'room': room,
-        'encryption_key': encryption_key
+        'encryption_key': encryption_key,
+        'status': 'active'
     }
     
     # Join the room
@@ -76,7 +77,8 @@ def handle_join(data):
     }, room=room, include_self=False)
     
     # Send user list to everyone in the room
-    room_users = [active_users[sid]['username'] for sid in active_users if active_users[sid]['room'] == room]
+    room_users = [{'username': active_users[sid]['username'], 'status': active_users[sid].get('status', 'active')} 
+                  for sid in active_users if active_users[sid]['room'] == room]
     emit('user_list_update', {'users': room_users}, room=room)
     
     # Send join confirmation
@@ -116,6 +118,22 @@ def handle_typing(data):
         'username': username,
         'is_typing': is_typing
     }, room=room, include_self=False)
+
+@socketio.on('status_change')
+def handle_status_change(data):
+    if request.sid not in active_users:
+        return
+    
+    status = data.get('status', 'active')
+    active_users[request.sid]['status'] = status
+    
+    username = active_users[request.sid]['username']
+    room = active_users[request.sid]['room']
+    
+    # Send updated user list to everyone in the room
+    room_users = [{'username': active_users[sid]['username'], 'status': active_users[sid].get('status', 'active')} 
+                  for sid in active_users if active_users[sid]['room'] == room]
+    emit('user_list_update', {'users': room_users}, room=room)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
