@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat Application</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="login-box">
+                <h1>🔒 Secure Chat</h1>
+                <p class="subtitle">End-to-end encrypted messaging</p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Enter your username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="room">Room Name</label>
+                        <input type="text" id="room" placeholder="Enter room name" value="general" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="encryption-key">Encryption Key</label>
+                        <input type="password" id="encryption-key" placeholder="Enter shared encryption key" required>
+                        <small>Share this key with other users in the room</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Join Chat</button>
+                    <button type="button" id="generate-key-btn" class="btn btn-secondary">Generate Random Key</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Chat Screen -->
+        <div id="chat-screen" class="screen">
+            <div class="chat-container">
+                <!-- Header -->
+                <div class="chat-header">
+                    <div class="header-left">
+                        <h2 id="room-name">Room: General</h2>
+                        <span id="user-name" class="user-badge"></span>
+                    </div>
+                    <div class="header-right">
+                        <span id="encryption-status" class="status-badge">🔒 Encrypted</span>
+                        <button id="leave-btn" class="btn btn-danger">Leave</button>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="chat-sidebar">
+                    <h3>Active Users</h3>
+                    <ul id="user-list"></ul>
+                </div>
+
+                <!-- Messages Area -->
+                <div class="chat-main">
+                    <div id="messages-container" class="messages-container"></div>
+                    
+                    <!-- Typing Indicator -->
+                    <div id="typing-indicator" class="typing-indicator"></div>
+
+                    <!-- Message Input -->
+                    <div class="message-input-container">
+                        <form id="message-form">
+                            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+                            <button type="submit" class="btn btn-send">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO and CryptoJS -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
