@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🔒 Secure Chat Application
 
 A real-time, end-to-end encrypted chat application built with Flask, Socket.IO, and AES encryption.
@@ -274,6 +273,3 @@ Built for Network Programming Final Project
 ---
 
 **Note**: This is an educational implementation. For production use, consult security experts and follow industry best practices.
-=======
-# ChatApp
->>>>>>> 68ca38b998f6e2005d9aa283910d2a0fd386549a
