@@ -44,7 +44,7 @@ def handle_disconnect():
 @socketio.on('join_chat')
 def handle_join(data):
     username = data.get('username')
-    room = data.get('room', 'general')
+    room = data.get('room', 'CIT221')
     encryption_key = data.get('encryption_key')
     
     # Store user info
