@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import secrets
 import base64
 import os
 from datetime import datetime
+from crypto_utils import generate_key
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)
@@ -16,6 +17,10 @@ chat_rooms = {}
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/generate-key')
+def generate_encryption_key():
+    return jsonify({'key': generate_key()})
 
 @socketio.on('connect')
 def handle_connect():

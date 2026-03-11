@@ -96,11 +96,22 @@ function decryptMessage(encryptedMessage, key) {
     }
 }
 
-// Generate random encryption key
-function generateRandomKey() {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode.apply(null, array));
+// Generate random encryption key from backend
+async function generateRandomKey() {
+    try {
+        const response = await fetch('/generate-key');
+        const data = await response.json();
+        return data.key;
+    } catch (error) {
+        console.error('Error generating key:', error);
+        // Fallback to simple random key
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let key = '';
+        for (let i = 0; i < 12; i++) {
+            key += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return key;
+    }
 }
 
 // Login form handler
@@ -134,8 +145,8 @@ loginForm.addEventListener('submit', (e) => {
 });
 
 // Generate key button handler
-generateKeyBtn.addEventListener('click', () => {
-    const key = generateRandomKey();
+generateKeyBtn.addEventListener('click', async () => {
+    const key = await generateRandomKey();
     document.getElementById('encryption-key').value = key;
     
     // Copy to clipboard

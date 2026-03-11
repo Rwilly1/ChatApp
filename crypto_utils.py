@@ -64,6 +64,9 @@ class AESCipher:
 def generate_key():
     """
     Generate a random encryption key
-    :return: Base64 encoded random key
+    :return: 12-character alphanumeric key
     """
-    return base64.b64encode(get_random_bytes(32)).decode('utf-8')
+    import string
+    import random
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(12))
