@@ -242,6 +242,17 @@ function addSystemMessage(message, timestamp) {
 // Update user list
 function updateUserList(users) {
     userList.innerHTML = '';
+    
+    // If only 1 user (yourself) or empty, show waiting message
+    if (!users || users.length <= 1) {
+        const li = document.createElement('li');
+        li.textContent = 'Waiting for others to join...';
+        li.style.fontStyle = 'italic';
+        li.style.color = '#999';
+        userList.appendChild(li);
+        return;
+    }
+    
     users.forEach(user => {
         const li = document.createElement('li');
         
@@ -250,12 +261,13 @@ function updateUserList(users) {
         statusIndicator.className = `status-indicator ${user.status || 'active'}`;
         
         // Create username text
-        const usernameText = document.createTextNode(` ${user.username}`);
+        const username = user.username || 'Unknown User';
+        const usernameText = document.createTextNode(` ${username}`);
         
         li.appendChild(statusIndicator);
         li.appendChild(usernameText);
         
-        if (user.username === currentUser) {
+        if (username === currentUser) {
             li.style.fontWeight = 'bold';
         }
         userList.appendChild(li);
