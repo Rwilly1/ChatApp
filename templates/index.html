@@ -94,8 +94,28 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- DM Panel -->
+                <div id="dm-panel" class="dm-panel">
+                    <div class="dm-header">
+                        <h3 id="dm-recipient-name">Direct Message</h3>
+                        <button id="close-dm" class="close-dm-btn">×</button>
+                    </div>
+                    <div id="dm-messages-container" class="dm-messages-container"></div>
+                    <div class="dm-input-container">
+                        <form id="dm-form">
+                            <input type="text" id="dm-input" placeholder="Type a private message..." autocomplete="off">
+                            <button type="submit" class="btn btn-send-dm">Send</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="user-context-menu" class="user-context-menu">
+        <div class="context-menu-item" id="send-dm-option">Send Direct Message</div>
     </div>
 
     <!-- Socket.IO and CryptoJS -->

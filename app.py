@@ -42,8 +42,9 @@ def handle_disconnect():
             'timestamp': datetime.now().strftime('%H:%M:%S')
         }, room=room)
         
-        # Update user list
-        room_users = [active_users[sid]['username'] for sid in active_users if active_users[sid]['room'] == room]
+        # Update user list with proper object format
+        room_users = [{'username': active_users[sid]['username'], 'status': active_users[sid].get('status', 'active')} 
+                      for sid in active_users if active_users[sid]['room'] == room]
         emit('user_list_update', {'users': room_users}, room=room)
 
 @socketio.on('join_chat')
@@ -139,6 +140,38 @@ def handle_status_change(data):
     room_users = [{'username': active_users[sid]['username'], 'status': active_users[sid].get('status', 'active')} 
                   for sid in active_users if active_users[sid]['room'] == room]
     emit('user_list_update', {'users': room_users}, room=room)
+
+@socketio.on('send_dm')
+def handle_direct_message(data):
+    if request.sid not in active_users:
+        return
+    
+    sender = active_users[request.sid]['username']
+    recipient_username = data.get('recipient')
+    encrypted_message = data.get('encrypted_message')
+    room = active_users[request.sid]['room']
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    
+    # Find recipient's socket ID
+    recipient_sid = None
+    for sid, user_data in active_users.items():
+        if user_data['username'] == recipient_username and user_data['room'] == room:
+            recipient_sid = sid
+            break
+    
+    dm_data = {
+        'sender': sender,
+        'recipient': recipient_username,
+        'encrypted_message': encrypted_message,
+        'timestamp': timestamp
+    }
+    
+    # Send DM to recipient
+    if recipient_sid:
+        emit('receive_dm', dm_data, room=recipient_sid)
+    
+    # Send DM back to sender for confirmation
+    emit('receive_dm', dm_data, room=request.sid)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))

@@ -20,7 +20,18 @@ const generateKeyBtn = document.getElementById('generate-key-btn');
 const typingIndicator = document.getElementById('typing-indicator');
 const statusBtn = document.getElementById('status-btn');
 const statusMenu = document.getElementById('status-menu');
+const dmPanel = document.getElementById('dm-panel');
+const dmMessagesContainer = document.getElementById('dm-messages-container');
+const dmForm = document.getElementById('dm-form');
+const dmInput = document.getElementById('dm-input');
+const dmRecipientName = document.getElementById('dm-recipient-name');
+const closeDmBtn = document.getElementById('close-dm');
+const userContextMenu = document.getElementById('user-context-menu');
+const sendDmOption = document.getElementById('send-dm-option');
 let currentStatus = 'active';
+let currentDmRecipient = null;
+let dmMessages = {};
+let unreadDmCounts = {};
 
 // Initialize Socket.IO connection
 function initializeSocket() {
@@ -71,6 +82,10 @@ function initializeSocket() {
     socket.on('disconnect', () => {
         console.log('Disconnected from server');
         addSystemMessage('Disconnected from server', getCurrentTime());
+    });
+
+    socket.on('receive_dm', (data) => {
+        handleDirectMessage(data);
     });
 }
 
@@ -219,11 +234,13 @@ function displayMessage(data) {
     const decryptedMessage = decryptMessage(data.encrypted_message, encryptionKey);
     
     messageDiv.innerHTML = `
+        <div class="message-content">
+            ${escapeHtml(decryptedMessage)}
+        </div>
         <div class="message-header">
             <span class="message-username">${escapeHtml(data.username)}</span>
             <span class="message-timestamp">${data.timestamp}</span>
         </div>
-        <div class="message-content">${escapeHtml(decryptedMessage)}</div>
     `;
     
     messagesContainer.appendChild(messageDiv);
@@ -239,40 +256,6 @@ function addSystemMessage(message, timestamp) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Update user list
-function updateUserList(users) {
-    userList.innerHTML = '';
-    
-    // If only 1 user (yourself) or empty, show waiting message
-    if (!users || users.length <= 1) {
-        const li = document.createElement('li');
-        li.textContent = 'Waiting for others to join...';
-        li.style.fontStyle = 'italic';
-        li.style.color = '#999';
-        userList.appendChild(li);
-        return;
-    }
-    
-    users.forEach(user => {
-        const li = document.createElement('li');
-        
-        // Create status indicator
-        const statusIndicator = document.createElement('span');
-        statusIndicator.className = `status-indicator ${user.status || 'active'}`;
-        
-        // Create username text
-        const username = user.username || 'Unknown User';
-        const usernameText = document.createTextNode(` ${username}`);
-        
-        li.appendChild(statusIndicator);
-        li.appendChild(usernameText);
-        
-        if (username === currentUser) {
-            li.style.fontWeight = 'bold';
-        }
-        userList.appendChild(li);
-    });
-}
 
 // Show chat screen
 function showChatScreen() {
@@ -337,6 +320,210 @@ function updateStatus(status) {
         socket.emit('status_change', { status: status });
     }
 }
+
+// DM Form handler
+dmForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const message = dmInput.value.trim();
+    if (!message || !currentDmRecipient) return;
+    
+    const encryptedMessage = encryptMessage(message, encryptionKey);
+    
+    if (!encryptedMessage) {
+        alert('Failed to encrypt message');
+        return;
+    }
+    
+    socket.emit('send_dm', {
+        recipient: currentDmRecipient,
+        encrypted_message: encryptedMessage
+    });
+    
+    dmInput.value = '';
+});
+
+// Close DM panel
+closeDmBtn.addEventListener('click', () => {
+    dmPanel.classList.remove('active');
+    currentDmRecipient = null;
+});
+
+// Handle incoming direct messages
+function handleDirectMessage(data) {
+    const otherUser = data.sender === currentUser ? data.recipient : data.sender;
+    
+    if (!dmMessages[otherUser]) {
+        dmMessages[otherUser] = [];
+    }
+    
+    dmMessages[otherUser].push(data);
+    
+    if (currentDmRecipient === otherUser) {
+        displayDmMessage({
+            ...data,
+            is_own: data.sender === currentUser
+        });
+    } else {
+        // Increment unread count if not currently viewing this DM and it's from someone else
+        if (data.sender !== currentUser) {
+            if (!unreadDmCounts[otherUser]) {
+                unreadDmCounts[otherUser] = 0;
+            }
+            unreadDmCounts[otherUser]++;
+            updateUserListBadges();
+        }
+        console.log(`New DM from ${data.sender}`);
+    }
+}
+
+// Display DM message
+function displayDmMessage(data) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'dm-message';
+    
+    if (data.is_own) {
+        messageDiv.classList.add('own');
+    }
+    
+    const decryptedMessage = decryptMessage(data.encrypted_message, encryptionKey);
+    
+    messageDiv.innerHTML = `
+        <div class="dm-message-content">${escapeHtml(decryptedMessage)}</div>
+        <div class="dm-message-info">${data.timestamp}</div>
+    `;
+    
+    dmMessagesContainer.appendChild(messageDiv);
+    dmMessagesContainer.scrollTop = dmMessagesContainer.scrollHeight;
+}
+
+// Open DM with user
+function openDmWith(username) {
+    if (username === currentUser) {
+        alert("You can't send a message to yourself!");
+        return;
+    }
+    
+    currentDmRecipient = username;
+    dmRecipientName.textContent = `DM: ${username}`;
+    dmMessagesContainer.innerHTML = '';
+    
+    // Clear unread count for this user
+    unreadDmCounts[username] = 0;
+    updateUserListBadges();
+    
+    if (dmMessages[username]) {
+        dmMessages[username].forEach(msg => {
+            displayDmMessage({
+                ...msg,
+                is_own: msg.sender === currentUser
+            });
+        });
+    }
+    
+    dmPanel.classList.add('active');
+    dmInput.focus();
+}
+
+// Update user list with context menu support
+function updateUserList(users) {
+    userList.innerHTML = '';
+    
+    if (!users || users.length <= 1) {
+        const li = document.createElement('li');
+        li.textContent = 'Waiting for others to join...';
+        li.style.fontStyle = 'italic';
+        li.style.color = '#999';
+        userList.appendChild(li);
+        return;
+    }
+    
+    users.forEach(user => {
+        const li = document.createElement('li');
+        const username = user.username || 'Unknown User';
+        
+        // Add data attribute for reliable username identification
+        li.dataset.username = username;
+        
+        const statusIndicator = document.createElement('span');
+        statusIndicator.className = `status-indicator ${user.status || 'active'}`;
+        
+        const usernameText = document.createTextNode(` ${username}`);
+        
+        li.appendChild(statusIndicator);
+        li.appendChild(usernameText);
+        
+        // Add notification badge if there are unread DMs
+        if (unreadDmCounts[username] && unreadDmCounts[username] > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'dm-notification-badge';
+            badge.textContent = unreadDmCounts[username];
+            li.appendChild(badge);
+        }
+        
+        if (username === currentUser) {
+            li.style.fontWeight = 'bold';
+        }
+        
+        if (username !== currentUser && users.length > 2) {
+            li.classList.add('dm-enabled');
+            li.title = 'Click to send a direct message';
+            li.addEventListener('click', () => {
+                openDmWith(username);
+            });
+        }
+        
+        userList.appendChild(li);
+    });
+}
+
+// Update user list badges without rebuilding entire list
+function updateUserListBadges() {
+    const userItems = userList.querySelectorAll('li[data-username]');
+    userItems.forEach(li => {
+        const username = li.dataset.username;
+        if (!username) return;
+        
+        // Remove existing badge
+        const existingBadge = li.querySelector('.dm-notification-badge');
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+        
+        // Add new badge if needed
+        if (unreadDmCounts[username] && unreadDmCounts[username] > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'dm-notification-badge';
+            badge.textContent = unreadDmCounts[username];
+            li.appendChild(badge);
+        }
+    });
+}
+
+// Show context menu
+function showContextMenu(event, username) {
+    userContextMenu.style.left = `${event.pageX}px`;
+    userContextMenu.style.top = `${event.pageY}px`;
+    userContextMenu.classList.add('show');
+    userContextMenu.dataset.username = username;
+}
+
+// Hide context menu
+document.addEventListener('click', (e) => {
+    if (!userContextMenu.contains(e.target)) {
+        userContextMenu.classList.remove('show');
+    }
+    statusMenu.classList.remove('show');
+});
+
+// Handle DM option click
+sendDmOption.addEventListener('click', () => {
+    const username = userContextMenu.dataset.username;
+    if (username) {
+        openDmWith(username);
+        userContextMenu.classList.remove('show');
+    }
+});
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
