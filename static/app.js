@@ -32,6 +32,15 @@ let currentStatus = 'active';
 let currentDmRecipient = null;
 let dmMessages = {};
 let unreadDmCounts = {};
+// Usernames rendered in the sidebar as of the last updateUserList() call, so
+// a status-only change (which re-broadcasts the whole roster) doesn't replay
+// the entrance animation on people who were already there.
+let knownUserList = new Set();
+
+// Other users' message bubble background (own-message color is set in CSS
+// via .message.own/.dm-message.own). Username/message text stays the
+// default grey for both - only the bubble background carries the color.
+const OTHER_BUBBLE_COLOR = 'rgba(85, 23, 173, 0.16)';
 
 // Initialize Socket.IO connection
 function initializeSocket() {
@@ -73,7 +82,7 @@ function initializeSocket() {
 
     socket.on('user_typing', (data) => {
         if (data.is_typing) {
-            typingIndicator.textContent = `${data.username} is typing...`;
+            typingIndicator.innerHTML = `${escapeHtml(data.username)} is typing${dotsHtml()}`;
         } else {
             typingIndicator.textContent = '';
         }
@@ -242,9 +251,14 @@ function displayMessage(data) {
             <span class="message-timestamp">${data.timestamp}</span>
         </div>
     `;
-    
+
+    if (data.sender_id !== socket.id) {
+        messageDiv.querySelector('.message-content').style.background = OTHER_BUBBLE_COLOR;
+    }
+
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    animateIn(messageDiv, { opacity: 0, y: 12, scale: 0.96, duration: 0.35, ease: 'power2.out' });
 }
 
 // Add system message
@@ -284,10 +298,34 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Animated "..." loading dots markup, reused by the typing indicator and the
+// waiting-for-users empty state
+function dotsHtml() {
+    return '<span class="loading-dots"><span></span><span></span><span></span></span>';
+}
+
+// GSAP entrance helper - falls back to a no-op if GSAP failed to load, so
+// elements still render (just without the motion) rather than staying hidden
+function animateIn(target, fromVars) {
+    // Two conditions can leave a gsap.from() element stuck invisible forever:
+    // (1) a backgrounded tab never runs requestAnimationFrame, and (2) the
+    // server sends 'user_list_update' before 'join_confirmation', so the
+    // very first roster render happens while #chat-screen is still
+    // display:none - animating elements inside a hidden container doesn't
+    // reliably resolve until something forces a re-layout (e.g. a tab
+    // switch). Skip the animation and render normally in either case.
+    if (window.gsap && !document.hidden && chatScreen.classList.contains('active')) {
+        gsap.from(target, fromVars);
+    }
+}
+
 // Status dropdown functionality
 statusBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     statusMenu.classList.toggle('show');
+    if (statusMenu.classList.contains('show')) {
+        animateIn(statusMenu, { opacity: 0, scale: 0.9, y: -6, duration: 0.18, ease: 'power2.out' });
+    }
 });
 
 // Close dropdown when clicking outside
@@ -392,9 +430,14 @@ function displayDmMessage(data) {
         <div class="dm-message-content">${escapeHtml(decryptedMessage)}</div>
         <div class="dm-message-info">${data.timestamp}</div>
     `;
-    
+
+    if (!data.is_own) {
+        messageDiv.querySelector('.dm-message-content').style.background = OTHER_BUBBLE_COLOR;
+    }
+
     dmMessagesContainer.appendChild(messageDiv);
     dmMessagesContainer.scrollTop = dmMessagesContainer.scrollHeight;
+    animateIn(messageDiv, { opacity: 0, y: 10, scale: 0.96, duration: 0.3, ease: 'power2.out' });
 }
 
 // Open DM with user
@@ -428,22 +471,29 @@ function openDmWith(username) {
 // Update user list with context menu support
 function updateUserList(users) {
     userList.innerHTML = '';
-    
+
     if (!users || users.length <= 1) {
         const li = document.createElement('li');
-        li.textContent = 'Waiting for others to join...';
+        li.innerHTML = `Waiting for others${dotsHtml()}`;
         li.style.fontStyle = 'italic';
         li.style.color = '#999';
         userList.appendChild(li);
+        knownUserList = new Set(users ? users.map(u => u.username || 'Unknown User') : []);
         return;
     }
-    
+
+    const newRows = [];
+
     users.forEach(user => {
         const li = document.createElement('li');
         const username = user.username || 'Unknown User';
-        
+
         // Add data attribute for reliable username identification
         li.dataset.username = username;
+
+        if (!knownUserList.has(username)) {
+            newRows.push(li);
+        }
         
         const statusIndicator = document.createElement('span');
         statusIndicator.className = `status-indicator ${user.status || 'active'}`;
@@ -475,6 +525,18 @@ function updateUserList(users) {
         
         userList.appendChild(li);
     });
+
+    if (newRows.length > 0) {
+        animateIn(newRows, {
+            opacity: 0,
+            x: -10,
+            stagger: 0.05,
+            duration: 0.3,
+            ease: 'power2.out'
+        });
+    }
+
+    knownUserList = new Set(users.map(u => u.username || 'Unknown User'));
 }
 
 // Update user list badges without rebuilding entire list
@@ -506,6 +568,7 @@ function showContextMenu(event, username) {
     userContextMenu.style.top = `${event.pageY}px`;
     userContextMenu.classList.add('show');
     userContextMenu.dataset.username = username;
+    animateIn(userContextMenu, { opacity: 0, scale: 0.9, duration: 0.15, ease: 'power2.out' });
 }
 
 // Hide context menu
@@ -528,4 +591,29 @@ sendDmOption.addEventListener('click', () => {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Secure Chat Application loaded');
+
+    // Idle float on the login screen lock icon
+    if (window.gsap) {
+        gsap.to('.logo-icon', {
+            y: -6,
+            duration: 2.2,
+            ease: 'sine.inOut',
+            yoyo: true,
+            repeat: -1
+        });
+    }
+});
+
+// Browsers suspend requestAnimationFrame in backgrounded tabs, so a GSAP
+// entrance animation (opacity/transform) that was mid-flight when the tab
+// was hidden would otherwise stay stuck invisible until refocused. The
+// instant the tab is hidden, snap any such element straight to its normal
+// (fully visible, untransformed) CSS state so it's always correct by the
+// time the user looks again.
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && window.gsap) {
+        gsap.set('#user-list li, .message, .dm-message, #status-menu, #user-context-menu', {
+            clearProps: 'opacity,transform'
+        });
+    }
 });

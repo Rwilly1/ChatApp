@@ -4,13 +4,40 @@
     box-sizing: border-box;
 }
 
+:root {
+    /* Palindromic stops (purple -> blue -> lime -> blue -> purple): the tile
+       starts and ends on the same color, so when it repeats edge-to-edge
+       there's no hard seam where one tile meets the next. */
+    --brand-flow-gradient: linear-gradient(90deg,
+        rgba(85, 23, 173, 0.5) 0%,
+        rgba(33, 90, 236, 0.45) 25%,
+        rgba(204, 255, 51, 0.25) 50%,
+        rgba(33, 90, 236, 0.45) 75%,
+        rgba(85, 23, 173, 0.5) 100%);
+}
+
 body {
     font-family: 'Century Gothic', 'CenturyGothic', AppleGothic, sans-serif;
-    background: linear-gradient(90deg, rgba(85, 23, 173, 0.5) 0%, rgba(33, 90, 236, 0.45) 50%, rgba(204, 255, 51, 0.25) 100%), #ffffff;
+    background-color: #ffffff;
+    background-image: var(--brand-flow-gradient);
+    background-size: 200% 100%;
+    animation: gradientFlow 18s linear infinite;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Seamless loop: background-size is 200% of the element, so the gradient
+   tiles every 200% of position. Shifting by exactly that amount (0 -> 200%)
+   wraps back to an identical frame with no visible jump. */
+@keyframes gradientFlow {
+    from {
+        background-position: 0% 0%;
+    }
+    to {
+        background-position: 200% 0%;
+    }
 }
 
 .container {
@@ -138,15 +165,15 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, rgba(85, 23, 173, 0.8) 0%, rgba(33, 90, 236, 0.8) 50%, rgba(247, 37, 133, 0.4) 100%);
+    background: #5F7CE8;
     color: white;
-    box-shadow: 0 4px 15px rgba(85, 23, 173, 0.2);
+    box-shadow: 0 4px 15px rgba(95, 124, 232, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(85, 23, 173, 0.35);
-    background: linear-gradient(135deg, rgba(85, 23, 173, 0.85) 0%, rgba(33, 90, 236, 0.85) 50%, rgba(247, 37, 133, 0.25) 100%);
+    box-shadow: 0 8px 25px rgba(95, 124, 232, 0.45);
+    background: #526BC8;
 }
 
 .btn-secondary {
@@ -173,7 +200,9 @@ body {
 .chat-header {
     height: 70px;
     flex-shrink: 0;
-    background: linear-gradient(90deg, rgba(85, 23, 173, 0.5) 0%, rgba(33, 90, 236, 0.45) 50%, rgba(204, 255, 51, 0.25) 100%);
+    background-image: var(--brand-flow-gradient);
+    background-size: 200% 100%;
+    animation: gradientFlow 18s linear infinite;
     color: white;
     padding: 0 24px;
     display: flex;
@@ -241,6 +270,16 @@ body {
 
 .status-indicator.active {
     background: #4CAF50;
+    animation: statusGlow 2s ease-in-out infinite;
+}
+
+@keyframes statusGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 4px 2px rgba(76, 175, 80, 0.5);
+    }
 }
 
 .status-indicator.busy {
@@ -261,6 +300,7 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 120px;
     display: none;
+    transform-origin: top right;
     z-index: 1000;
 }
 
@@ -419,7 +459,6 @@ body {
 
 .message {
     margin-bottom: 16px;
-    animation: messageSlide 0.3s ease-out;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -427,17 +466,6 @@ body {
 
 .message.own {
     align-items: flex-end;
-}
-
-@keyframes messageSlide {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .message-header {
@@ -493,6 +521,41 @@ body {
     font-style: italic;
 }
 
+/* Loading dots (typing indicator, waiting-for-users state) */
+.loading-dots {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 2px;
+}
+
+.loading-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.3;
+    animation: dotBounce 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes dotBounce {
+    0%, 60%, 100% {
+        opacity: 0.3;
+        transform: translateY(0);
+    }
+    30% {
+        opacity: 1;
+        transform: translateY(-3px);
+    }
+}
+
 /* Typing Indicator */
 .typing-indicator {
     padding: 0 24px 8px;
@@ -533,19 +596,19 @@ body {
 }
 
 .btn-send {
-    background: linear-gradient(135deg, rgba(85, 23, 173, 0.85) 0%, rgba(33, 90, 236, 0.85) 100%);
+    background: #5F7CE8;
     color: white;
     padding: 12px 32px;
     width: auto;
     margin: 0;
     border-radius: 24px;
-    box-shadow: 0 2px 10px rgba(85, 23, 173, 0.2);
+    box-shadow: 0 2px 10px rgba(95, 124, 232, 0.3);
 }
 
 .btn-send:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(85, 23, 173, 0.35);
-    background: linear-gradient(135deg, rgba(85, 23, 173, 0.95) 0%, rgba(33, 90, 236, 0.95) 100%);
+    box-shadow: 0 4px 15px rgba(95, 124, 232, 0.45);
+    background: #526BC8;
 }
 
 /* Scrollbar Styling */
@@ -577,7 +640,7 @@ body {
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    transition: right 0.3s ease;
+    transition: right 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 1000;
     border-left: 2px solid rgba(85, 23, 173, 0.2);
 }
@@ -587,7 +650,9 @@ body {
 }
 
 .dm-header {
-    background: linear-gradient(90deg, rgba(85, 23, 173, 0.5) 0%, rgba(33, 90, 236, 0.45) 100%);
+    background-image: var(--brand-flow-gradient);
+    background-size: 200% 100%;
+    animation: gradientFlow 18s linear infinite;
     color: white;
     padding: 16px 20px;
     display: flex;
@@ -656,24 +721,24 @@ body {
 }
 
 .btn-send-dm {
-    background: linear-gradient(135deg, rgba(85, 23, 173, 0.85) 0%, rgba(33, 90, 236, 0.85) 100%);
+    background: #5F7CE8;
     color: white;
     padding: 10px 24px;
     width: auto;
     margin: 0;
     border-radius: 20px;
-    box-shadow: 0 2px 10px rgba(85, 23, 173, 0.2);
+    box-shadow: 0 2px 10px rgba(95, 124, 232, 0.3);
     font-size: 14px;
 }
 
 .btn-send-dm:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(85, 23, 173, 0.35);
+    box-shadow: 0 4px 15px rgba(95, 124, 232, 0.45);
+    background: #526BC8;
 }
 
 .dm-message {
     margin-bottom: 12px;
-    animation: messageSlide 0.3s ease-out;
 }
 
 .dm-message.own {
@@ -711,6 +776,7 @@ body {
     min-width: 150px;
     z-index: 2000;
     display: none;
+    transform-origin: top left;
 }
 
 .user-context-menu.show {
