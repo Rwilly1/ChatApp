@@ -650,9 +650,7 @@ body {
 }
 
 .dm-header {
-    background-image: var(--brand-flow-gradient);
-    background-size: 200% 100%;
-    animation: gradientFlow 18s linear infinite;
+    background: #5F7CE8;
     color: white;
     padding: 16px 20px;
     display: flex;

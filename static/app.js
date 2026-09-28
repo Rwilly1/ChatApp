@@ -474,7 +474,7 @@ function updateUserList(users) {
 
     if (!users || users.length <= 1) {
         const li = document.createElement('li');
-        li.innerHTML = `Waiting for others${dotsHtml()}`;
+        li.innerHTML = `Waiting For Others${dotsHtml()}`;
         li.style.fontStyle = 'italic';
         li.style.color = '#999';
         userList.appendChild(li);
